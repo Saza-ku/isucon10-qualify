@@ -48,3 +48,6 @@ ALTER TABLE isuumo.estate DEFAULT CHARACTER SET utf8mb4;
 ALTER TABLE isuumo.chair DEFAULT CHARACTER SET utf8mb4;
 ALTER TABLE isuumo.estate CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE isuumo.chair CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+
+ALTER TABLE isuumo.chair ADD INDEX index_chair (`stock` DESC, `price` ASC, `id` ASC);
