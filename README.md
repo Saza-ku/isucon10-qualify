@@ -25,4 +25,5 @@
   - `sudo apt install graphviz`
 - [ ] pprof をアプリケーションに入れる
   - [このようにする](https://github.com/Nagarei/isucon11-qualify-test/commit/0153056b705a7b6c265244e45840c8c3a1a134f6)
+- [ ] ベンチマークを回し、初期スコアとログを Issues に貼る
 - [ ] 終了時に pprof, slow query をオフにする
