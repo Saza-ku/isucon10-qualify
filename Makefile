@@ -1,9 +1,9 @@
 
 .PHONY: build
 build:
-	cd ~/webapp/go; \
-	go build -o isucondition main.go; \
-	sudo systemctl restart isucondition.go.service;
+	cd ~/isuumo/webapp/go; \
+	go build -o isuumo main.go; \
+	sudo systemctl restart isuumo.go.service;
 
 .PHONY: pprof
 pprof:
@@ -13,7 +13,7 @@ pprof:
 MYSQL_HOST="127.0.0.1"
 MYSQL_PORT=3306
 MYSQL_USER=isucon
-MYSQL_DBNAME=isucondition
+MYSQL_DBNAME=isuumo
 MYSQL_PASS=isucon
 
 MYSQL=mysql -h$(MYSQL_HOST) -P$(MYSQL_PORT) -u$(MYSQL_USER) -p$(MYSQL_PASS) $(MYSQL_DBNAME)
