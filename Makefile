@@ -40,7 +40,7 @@ slow-show:
 # alp
 
 ALPSORT=sum
-ALPM="/api/isu/.+/icon,/api/isu/.+/graph,/api/isu/.+/condition,/api/isu/[-a-z0-9]+,/api/condition/[-a-z0-9]+,/api/catalog/.+,/api/condition\?,/isu/........-....-.+,/\?jwt=[-a-z0-9]+"
+ALPM="/api/chair/[0-9]+,/api/chair/buy/[0-9]+,/api/estate/[0-9]+,/api/estate/req_doc/[0-9]+,/api/recommended_estate/[0-9]+,/api/estate/search\?.+,/api/chair/search\?.+,/api//search\?.+"
 OUTFORMAT=count,method,uri,min,max,sum,avg,p99
 .PHONY: alp
 alp:

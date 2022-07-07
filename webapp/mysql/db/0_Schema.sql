@@ -4,6 +4,13 @@ CREATE DATABASE isuumo;
 DROP TABLE IF EXISTS isuumo.estate;
 DROP TABLE IF EXISTS isuumo.chair;
 
+SET character_set_database=utf8mb4;
+
+SET character_set_database=utf8mb4;
+SET character_set_server=utf8mb4;
+SET character_set_client=utf8mb4;
+SET character_set_connection=utf8mb4;
+
 CREATE TABLE isuumo.estate
 (
     id          INTEGER             NOT NULL PRIMARY KEY,
@@ -36,3 +43,8 @@ CREATE TABLE isuumo.chair
     popularity  INTEGER         NOT NULL,
     stock       INTEGER         NOT NULL
 );
+
+ALTER TABLE isuumo.estate DEFAULT CHARACTER SET utf8mb4;
+ALTER TABLE isuumo.chair DEFAULT CHARACTER SET utf8mb4;
+ALTER TABLE isuumo.estate CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE isuumo.chair CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
