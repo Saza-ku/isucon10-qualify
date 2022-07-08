@@ -51,3 +51,4 @@ ALTER TABLE isuumo.chair CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicod
 
 
 ALTER TABLE isuumo.chair ADD INDEX index_chair (`price` ASC, `id` ASC);
+ALTER TABLE isuumo.estate ADD INDEX index_estate_rent_id (`rent` ASC, `id` ASC);
