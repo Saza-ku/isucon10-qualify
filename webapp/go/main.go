@@ -257,6 +257,8 @@ func main() {
 
 	mc = memcache.New("localhost:11211")
 
+	mc.DeleteAll()
+
 	// Echo instance
 	e := echo.New()
 	e.Debug = true
@@ -322,6 +324,31 @@ func SetChair(mc *memcache.Client, c *Chair) error {
 	}
 	return mc.Set(&memcache.Item{
 		Key:        fmt.Sprintf("chair:%d", c.ID),
+		Value:      data,
+		Expiration: 50,
+	})
+}
+
+func GetEstate(mc *memcache.Client, id int64) (*Estate, error) {
+	data, err := mc.Get(fmt.Sprintf("estate:%d", id))
+	if err != nil {
+		return nil, err
+	}
+	c := new(Estate)
+	err = json.Unmarshal(data.Value, c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func SetEstate(mc *memcache.Client, c *Estate) error {
+	data, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	return mc.Set(&memcache.Item{
+		Key:        fmt.Sprintf("estate:%d", c.ID),
 		Value:      data,
 		Expiration: 50,
 	})
@@ -713,6 +740,15 @@ func getEstateDetail(c echo.Context) error {
 	}
 
 	var estate Estate
+
+	est, err := GetEstate(mc, int64(id))
+	if err == nil {
+		return c.JSON(http.StatusOK, est)
+	} else {
+		if err != memcache.ErrCacheMiss {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+	}
 	err = db.Get(&estate, `SELECT 
 	id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity
 	 FROM estate WHERE id = ?`, id)
@@ -722,6 +758,11 @@ func getEstateDetail(c echo.Context) error {
 			return c.NoContent(http.StatusNotFound)
 		}
 		c.Echo().Logger.Errorf("Database Execution error : %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	err = SetEstate(mc, &estate)
+	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
