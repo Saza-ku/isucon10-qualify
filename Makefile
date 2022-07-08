@@ -35,8 +35,10 @@ slow-off:
 # オプションは合計時間ソート
 .PHONY: slow-show
 slow-show:
-	sudo mysqldumpslow -s t $(SLOW_LOG) | head -n 20
-
+	sudo mysqldumpslow -s t $(SLOW_LOG) | head -n 30
+.PHONY: slow-detail
+slow-detail:
+	sudo cat /tmp/slow-query.log | pt-query-digest --limit 8
 # alp
 
 ALPSORT=sum

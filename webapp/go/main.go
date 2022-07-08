@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	json "github.com/goccy/go-json"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
