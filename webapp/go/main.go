@@ -12,9 +12,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	json "github.com/goccy/go-json"
 
+	"github.com/bradfitz/gomemcache/memcache"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo"
@@ -240,10 +242,20 @@ func init() {
 	json.Unmarshal(jsonText, &estateSearchCondition)
 }
 
+var mc *memcache.Client
+var mu *sync.Mutex
+var cc map[int64]*Chair
+
 func main() {
 	go func() {
 		log.Fatal(http.ListenAndServe(":6060", nil))
 	}()
+
+	cc = map[int64]*Chair{}
+
+	mu = &sync.Mutex{}
+
+	mc = memcache.New("localhost:11211")
 
 	// Echo instance
 	e := echo.New()
@@ -290,7 +302,34 @@ func main() {
 	e.Logger.Fatal(e.Start(serverPort))
 }
 
+func GetChair(mc *memcache.Client, id int64) (*Chair, error) {
+	data, err := mc.Get(fmt.Sprintf("chair:%d", id))
+	if err != nil {
+		return nil, err
+	}
+	c := new(Chair)
+	err = json.Unmarshal(data.Value, c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func SetChair(mc *memcache.Client, c *Chair) error {
+	data, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	return mc.Set(&memcache.Item{
+		Key:        fmt.Sprintf("chair:%d", c.ID),
+		Value:      data,
+		Expiration: 50,
+	})
+}
+
 func initialize(c echo.Context) error {
+	mc.DeleteAll()
+
 	sqlDir := filepath.Join("..", "mysql", "db")
 	paths := []string{
 		filepath.Join(sqlDir, "0_Schema.sql"),
@@ -328,6 +367,16 @@ func getChairDetail(c echo.Context) error {
 	}
 
 	chair := Chair{}
+
+	cha, err := GetChair(mc, int64(id))
+	if err == nil {
+		return c.JSON(http.StatusOK, cha)
+	} else {
+		if err != memcache.ErrCacheMiss {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+	}
+
 	query := `SELECT * FROM chair WHERE id = ?`
 	err = db.Get(&chair, query, id)
 	if err != nil {
@@ -340,6 +389,11 @@ func getChairDetail(c echo.Context) error {
 	} else if chair.Stock <= 0 {
 		c.Echo().Logger.Infof("requested id's chair is sold out : %v", id)
 		return c.NoContent(http.StatusNotFound)
+	}
+
+	err = SetChair(mc, &chair)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	return c.JSON(http.StatusOK, chair)
@@ -369,6 +423,8 @@ func postChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
+
+	var chairs []*Chair
 	for _, row := range records {
 		rm := RecordMapper{Record: row}
 		id := rm.NextInt()
@@ -384,6 +440,9 @@ func postChair(c echo.Context) error {
 		kind := rm.NextString()
 		popularity := rm.NextInt()
 		stock := rm.NextInt()
+		if stock <= 0 {
+			continue
+		}
 		if err := rm.Err(); err != nil {
 			c.Logger().Errorf("failed to read record: %v", err)
 			return c.NoContent(http.StatusBadRequest)
@@ -393,10 +452,34 @@ func postChair(c echo.Context) error {
 			c.Logger().Errorf("failed to insert chair: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
+
+		chair := Chair{
+			ID:          int64(id),
+			Name:        name,
+			Description: description,
+			Thumbnail:   thumbnail,
+			Price:       int64(price),
+			Height:      int64(height),
+			Width:       int64(width),
+			Depth:       int64(depth),
+			Color:       color,
+			Features:    features,
+			Kind:        kind,
+			Popularity:  int64(popularity),
+			Stock:       int64(stock),
+		}
+		chairs = append(chairs, &chair)
 	}
 	if err := tx.Commit(); err != nil {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	for _, chair := range chairs {
+		err = SetChair(mc, chair)
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
 	}
 	return c.NoContent(http.StatusCreated)
 }
@@ -582,6 +665,13 @@ func buyChair(c echo.Context) error {
 		_, err = tx.Exec("DELETE FROM chair WHERE id = ?", id)
 		if err != nil {
 			c.Echo().Logger.Errorf("chair stock delete failed : %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		mc.Delete(fmt.Sprintf("chair:%d", id))
+	} else {
+		err = SetChair(mc, &chair)
+		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
 	}
