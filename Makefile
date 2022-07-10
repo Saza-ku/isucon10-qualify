@@ -23,7 +23,7 @@ SLOW_LOG=/tmp/slow-query.log
 # DBを再起動すると設定はリセットされる
 .PHONY: slow-on
 slow-on:
-	sudo rm $(SLOW_LOG)
+	-sudo rm $(SLOW_LOG)
 	sudo systemctl restart mysql
 	$(MYSQL) -e "set global slow_query_log_file = '$(SLOW_LOG)'; set global long_query_time = 0.001; set global slow_query_log = ON;"
 
